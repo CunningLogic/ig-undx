@@ -1,5 +1,7 @@
 /* 
  * Developed by Marc Schoenefeld <marc.schoenefeld@gmx.org> 
+ * Updates by Corey Benninger, Max Sobell, Zach Lanier of Intrepidus Group
+ * {corey.benninger,max.sobell,zach.lanier}@intrepidusgroup.com  
  * 
  * Copyright (C) 2009 Marc Schoenefeld <http://www.illegalaccess.org> 
  * 

@@ -1,23 +1,25 @@
-/* 
- * Developed by Marc Schoenefeld <marc.schoenefeld@gmx.org> 
+/*
+ * Developed by Marc Schoenefeld <marc.schoenefeld@gmx.org>
+ * Updates by Corey Benninger, Max Sobell, Zach Lanier of Intrepidus Group
+ * {corey.benninger,max.sobell,zach.lanier}@intrepidusgroup.com  
  * 
- * Copyright (C) 2009 Marc Schoenefeld <http://www.illegalaccess.org> 
- * 
- * This file is a part of undx. 
- * 
- * This project is free software; you can redistribute it and/or modify 
- * it under the terms of the GNU General Public License as published by 
- * the Free Software Foundation; either version 2 of the License, or 
- * (at your option) any later version. 
- * 
- * This project is distributed in the hope that it will be useful, 
- * but WITHOUT ANY WARRANTY; without even the implied warranty of 
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the 
- * GNU General Public License for more details. 
- * 
- * You should have received a copy of the GNU General Public License 
- * along with this program; if not, write to the Free Software 
- * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA 
+ * Copyright (C) 2009 Marc Schoenefeld <http://www.illegalaccess.org>
+ *
+ * This file is a part of undx.
+ *
+ * This project is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation; either version 2 of the License, or
+ * (at your option) any later version.
+ *
+ * This project is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
+ * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
  */
 
 package org.illegalaccess.undx;
@@ -58,17 +60,16 @@ public class APKAccess {
 	public APKAccess(String file) throws IOException {
 
 		conststr = new ArrayList<String>();
-		adkloc = System.getProperty(DalvikToJVM.ASDK_LOC_PROPERTY, "");
+		adkloc = DalvikToJVM.askloc;
 
 		theFileName = file;
 		if (adkloc.length() > 0) {
-			adkloc += "/";
+			if( adkloc.charAt( adkloc.length()-1 ) != File.separatorChar )
+			adkloc += File.separatorChar;
 		}
-		// theFileName = theFileName.replaceAll(" ","\\ ");
-		// String execline = adkloc + "dexdump -dfh  " + theFileName;
-		// jlog.severe(execline);
+		
 		Process p = Runtime.getRuntime().exec(
-				new String[] { adkloc + "/tools" + "/dexdump", "-dfh",
+				new String[] { adkloc + "tools" + "/dexdump", "-dfh",
 						theFileName });
 		BufferedReader is = new BufferedReader(new InputStreamReader(p
 				.getInputStream()));

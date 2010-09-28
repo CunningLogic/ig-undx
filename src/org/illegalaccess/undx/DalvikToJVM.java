@@ -1,5 +1,7 @@
 /* 
  * Developed by Marc Schoenefeld <marc.schoenefeld@gmx.org> 
+ * Updates by Corey Benninger, Max Sobell, Zach Lanier of Intrepidus Group
+ * {corey.benninger,max.sobell,zach.lanier}@intrepidusgroup.com  
  * 
  * Copyright (C) 2009 Marc Schoenefeld <http://www.illegalaccess.org> 
  * 
@@ -34,6 +36,7 @@ import gnu.getopt.LongOpt;
 import java.io.BufferedOutputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.File;
+import java.io.FileFilter;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
@@ -47,7 +50,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Enumeration;
 import java.util.List;
-import java.util.Properties;
+import java.util.prefs.*;
 
 import java.util.jar.JarEntry;
 import java.util.jar.JarInputStream;
@@ -106,20 +109,22 @@ public class DalvikToJVM {
 
 	String outpref = "";
 
-	public static final String ASDK_LOC_PROPERTY = "ASDKLoc";
-
 	private static Logger jlog = Logger.getLogger(DalvikToJVM.class.getName());
+	
+	public static String askloc = "";
 
 	public static ClassCollection cc;
+	
+	public static String user = System.getProperty( "user.name" );
+	public static String os = System.getProperty( "os.name" );
+	public static String sep = System.getProperty( "file.separator" );
+
+	private static Preferences prefs;
+
 	APKAccess _apa;
 
 	static {
 		jlog.setLevel(Level.ALL);
-	}
-
-	static String guessASDKLOC() {
-		return System.getProperty("user.home")
-				+ "/android-sdk-mac_86/platforms/android-7/";
 	}
 
 	public static void main(String[] argv) throws Exception {
@@ -131,27 +136,23 @@ public class DalvikToJVM {
 
 		String filename = "";
 		String otafile = "";
-		String askloc = "";
 		String outputdir = "gen";
+		
+		prefs = Preferences.userNodeForPackage(DalvikToJVM.class);
 
-		LongOpt[] longopts = new LongOpt[7];
+		LongOpt[] longopts = new LongOpt[8];
 
-		longopts[0] = new LongOpt("ASDKLoc", LongOpt.OPTIONAL_ARGUMENT, null,
-				's');
+		longopts[0] = new LongOpt("ASDKLoc", LongOpt.OPTIONAL_ARGUMENT, null, 's');
 		longopts[1] = new LongOpt("debug", LongOpt.NO_ARGUMENT, null, 'd');
-		longopts[2] = new LongOpt("outputdir", LongOpt.REQUIRED_ARGUMENT, null,
-				'O');
-		longopts[3] = new LongOpt("filename", LongOpt.REQUIRED_ARGUMENT, null,
-				'f');
-		longopts[4] = new LongOpt("updatefiles", LongOpt.OPTIONAL_ARGUMENT,
-				null, 'u');
-		longopts[5] = new LongOpt("verify", LongOpt.OPTIONAL_ARGUMENT, null,
-				'v');
-
+		longopts[2] = new LongOpt("outputdir", LongOpt.REQUIRED_ARGUMENT, null, 'O');
+		longopts[3] = new LongOpt("filename", LongOpt.REQUIRED_ARGUMENT, null, 'f');
+		longopts[4] = new LongOpt("updatefiles", LongOpt.OPTIONAL_ARGUMENT,	null, 'u');
+		longopts[5] = new LongOpt("verify", LongOpt.OPTIONAL_ARGUMENT, null, 'v');
 		longopts[6] = new LongOpt("help", LongOpt.NO_ARGUMENT, null, 'h');
+		longopts[7] = new LongOpt("clear", LongOpt.NO_ARGUMENT, null, 'c');
 
 		String arg;
-		Getopt go = new Getopt("undx", argv, ":s:dvo:f:h", longopts);
+		Getopt go = new Getopt("undx", argv, ":s:dvo:f:hc", longopts);
 		int c = 0;
 		while ((c = go.getopt()) != -1) {
 			switch (c) {
@@ -161,7 +162,6 @@ public class DalvikToJVM {
 						+ ((arg != null) ? arg : "null"));
 				askloc = arg;
 				break;
-
 			case 'd':
 				debug = true;
 				jlog.info("Debug activated':" + (char) c);
@@ -188,7 +188,11 @@ public class DalvikToJVM {
 				otafile = go.getOptarg().trim();
 				jlog.info("OTAFile':" + otafile);
 				break;
-
+			case 'c':
+				prefs.clear();
+				System.out.println("Preferences cleared");
+				dohelp=true;
+				break;
 			}
 
 		}
@@ -197,49 +201,14 @@ public class DalvikToJVM {
 			showHelp(); 
 			System.exit(0);
 		}
-		System.out.println("ASDKLoc:" + askloc);
-
-		if (System.getProperty(ASDK_LOC_PROPERTY) == null) {
-			Properties properties = new Properties();
-			String adsk = "";
-			try {
-				properties.load(new FileInputStream("undx.properties"));
-				adsk = (String) properties.get(ASDK_LOC_PROPERTY) + "/tools/";
-			} catch (IOException e) {
-			}
-
-			// Properties p = new Properties()
-			if (adsk == "") {
-				adsk = guessASDKLOC();
-				// adsk = System.getProperty("user.home") +
-				// "/android-sdk/tools/";
-			}
-			askloc = adsk;
-			// System.setProperty(ASDK_LOC_PROPERTY, adsk);
-
+		
+		if( askloc.equals("") ) {
+			findASDK();
 		}
-		System.setProperty(ASDK_LOC_PROPERTY, askloc);
-		// System.exit(0);
-		// OTAAccess ota = new OTAAccess();
-		List<File> lf = new ArrayList<File>();
+		
+		System.out.println("Using ASDKLoc: " + askloc);
 
-		/*
-		 * lf .add(new File(
-		 * "/Users/marc/Desktop/android_ota/ota148830/system/framework/core.odex"
-		 * )); lf .add(new File(
-		 * "/Users/marc/Desktop/android_ota/ota148830/system/framework/ext.odex"
-		 * )); lf .add(new File(
-		 * "/Users/marc/Desktop/android_ota/ota148830/system/framework/framework.odex"
-		 * )); lf .add(new File(
-		 * "/Users/marc/Desktop/android_ota/ota148830/system/framework/android.policy.odex"
-		 * )); lf .add(new File(
-		 * "/Users/marc/Desktop/android_ota/ota148830/system/framework/services.odex"
-		 * )); lf .add(new File(
-		 * "/Users/marc/Desktop/android_ota/ota148830/system/framework/com.google.android.gtalkservice.odex"
-		 * )); lf .add(new File(
-		 * "/Users/marc/Desktop/android_ota/ota148830/system/app/HTMLViewer.odex"
-		 * ));
-		 */
+		List<File> lf = new ArrayList<File>();
 
 		String outpref = System.getProperty("undx.destdir", outputdir);
 
@@ -253,29 +222,26 @@ public class DalvikToJVM {
 
 			if (!(e instanceof ZipException)
 					&& !(e instanceof FileNotFoundException)) {
-				System.out
-						.println("Make sure to specific the Android SDK location with set -D"
-								+ DalvikToJVM.ASDK_LOC_PROPERTY);
+				System.out.println("Make sure to set the specific the Android SDK location with -s"
+								+ " i.e., -s /home/user/android-adb/android-sdk-linux_86/platforms/android-8\n"
+								+ "Current ASKLoc: " + askloc);
 				System.out.println("caught exception:");
 				e.printStackTrace(System.out);
 			} else {
 				System.out.println(e);
 			}
-
 		}
-		;
-
 	}
 
 	private static void showHelp() {
 		System.out.println("DalvikToJVM"); 
-		System.out.println("-f <apkfile> " ); 
+		System.out.println("-f 			<apkfile> " ); 
 		System.out.println("-d          enable debug"); 
 		System.out.println("-h          show help"); 
 		System.out.println("-v          enable verification"); 
 		System.out.println("-s          Android SDK Location"); 
-		System.out.println("-s          Android SDK Location"); 
 		System.out.println("-o          output directory");
+		System.out.println("-c          clear previous search location");
 	}
 
 	private static boolean isOTA(String z) throws IOException {
@@ -292,7 +258,68 @@ public class DalvikToJVM {
 		return hasodex;
 
 	}
+	
+	public static void findASDK() {
+		//we haven't already done and stored the search.
+		if( prefs.get("askloc","").equals("") ) {
+			String userhome = System.getProperty("user.home");
+			System.out.println("Searching for ASDKLoc in " + userhome + "...");
+			
+			myFindASDK( new File( userhome ) );
+			
+			//not blank, we found it!
+			if( !askloc.equals("") ) {
+				try {
+					prefs.put("askloc", askloc);
+				} catch( NullPointerException e ) {
+					System.out.println("Cannot set preference: " + e.getMessage() );
+				}
+			} else {
+				System.out.println("Could not find ASDK");
+			}
+		//the search was already done, load it up.
+		} else {
+			askloc = prefs.get("askloc","");
+		}
+	}
+	
+	private static void myFindASDK(File root) {
+		if( askloc.equals( "" ) ) {
+			String[] children = root.list();
+			if( children != null ) {
+				for (int i=0; i < children.length; i++) {
+					File f = new File(root, children[i]);
+					//System.out.println("f: " + f.toString() );
+					if( f.exists() && f.canRead() && f.isDirectory() ) {
+						if( f.toString().contains("android-sdk-") ) {
+							//System.out.println("FILE: " + f.toString() );
+							askloc = new File( f.getAbsolutePath() + sep + "platforms" + sep +
+									"android-" + findVersion( f ) ).toString();
+							break;
+						} else {
+							myFindASDK( f );
+						}
+					}
+				}
+			}
+		}
+	}
 
+	public static String findVersion(File f) {
+		Integer version = 0;
+		File path = new File( f.getAbsolutePath() + sep + "platforms" );
+		String[] children = path.list();
+		for (int i=0; i < children.length; i++ ) {
+			int t = Character.digit(children[i].charAt( children[i].length()-1 ),10);
+			//System.out.println("version = " + t);
+			if( t > version ) {
+				version = t;
+			}
+		}
+		//System.out.println(version.toString());
+		return version.toString();
+	}
+	
 	public DalvikToJVM(String _outpref) {
 		outpref = _outpref;
 
@@ -350,7 +377,7 @@ public class DalvikToJVM {
 			z = filename;
 
 		}
-		System.out.println(otamode);
+		System.out.println("OTA Mode: " + otamode);
 
 		// String z = arr[idx];
 		String dest = new File(z).getName() + ".jar";
@@ -491,20 +518,9 @@ public class DalvikToJVM {
 				fos.write(bos.toByteArray());
 				fos.close();
 
-				/*
-				 * Class v = ucl
-				 * .loadClass("org.apache.bcel.verifier.NativeVerifier");
-				 * java.lang.reflect.Method[] meths = v.getMethods();
-				 * java.lang.reflect.Method mt = null; for (int i = 0; i <
-				 * meths.length; i++) { if
-				 * (meths[i].getName().startsWith("main")) { mt = meths[i];
-				 * break; } }
-				 */
 				String thenewname = thename.replaceAll(".class", "");
 				thenewname = thenewname.replaceAll("/", ".");
-				// mt.invoke(null, new Object[] { new String[] { thenewname} });
 
-				// try {
 				System.out.println("Testing:" + thenewname);
 				try {
 					Class x = Class.forName(thenewname, true, ucl);
@@ -527,7 +543,6 @@ public class DalvikToJVM {
 				} catch (Exception e) {
 					e.printStackTrace();
 				}
-				// }
 
 			} catch (Throwable e) {
 				e.printStackTrace();
@@ -540,11 +555,9 @@ public class DalvikToJVM {
 	private static URLClassLoader getTestClassLoader(File f)
 			throws MalformedURLException {
 		URL url1 = new URL("file://" + f.getAbsolutePath());
-		// URL url2 = new URL("file:///Users/marc/android-sdk/android.jar");
 		URL url3 = new URL("file://tmp/");
 		URL url4 = new URL("file://" + new File(".").getAbsolutePath());
-		URL url5 = new URL("file://" + System.getProperty(ASDK_LOC_PROPERTY)
-				+ "/android.jar");
+		URL url5 = new URL("file://" + askloc + "/android.jar");
 
 		URLClassLoader ucl = new URLClassLoader(new URL[] { url4, url1, url3,
 				url5 });

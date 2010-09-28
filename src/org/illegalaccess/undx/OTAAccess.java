@@ -1,5 +1,7 @@
 /* 
  * Developed by Marc Schoenefeld <marc.schoenefeld@gmx.org> 
+ * Updates by Corey Benninger, Max Sobell, Zach Lanier of Intrepidus Group
+ * {corey.benninger,max.sobell,zach.lanier}@intrepidusgroup.com  
  * 
  * Copyright (C) 2009 Marc Schoenefeld <http://www.illegalaccess.org> 
  * 
@@ -34,11 +36,14 @@ import java.util.logging.Logger;
 import org.illegalaccess.undx.tools.FileList;
 import org.illegalaccess.undx.types.ClassCollection;
 
+/*
+ * THIS CLASS IS NOT USED
+ */
 public class OTAAccess {
 
 	static String path = System.getProperty("OTALocPath",
 			"/Users/marc/Desktop/android_ota/ota148830/system/framework");
-	static String exe = System.getProperty(DalvikToJVM.ASDK_LOC_PROPERTY);
+	static String exe = System.getProperty(DalvikToJVM.askloc);
 
 	// def parseMethod(m):
 	// proto="""
@@ -61,61 +66,40 @@ public class OTAAccess {
 	// return k
 
 	public static void main(String[] a) throws Exception {
-		System.setProperty("ASDKLoc", exe);
 		OTAAccess ota = new OTAAccess();
+		
+		//TODO: fix startdir -- never read ??? (-max 6/23)
 		String startdir = a.length == 0 ? path : a[0];
 
 		List<File> lf = new ArrayList<File>();
 
-		lf
-				.add(new File(
-						"/Users/marc/Desktop/android_ota/ota148830/system/framework/core.odex"));
-		lf
-				.add(new File(
-						"/Users/marc/Desktop/android_ota/ota148830/system/framework/ext.odex"));
-		lf
-				.add(new File(
-						"/Users/marc/Desktop/android_ota/ota148830/system/framework/framework.odex"));
-		lf
-				.add(new File(
-						"/Users/marc/Desktop/android_ota/ota148830/system/framework/android.policy.odex"));
-		lf
-				.add(new File(
-						"/Users/marc/Desktop/android_ota/ota148830/system/framework/services.odex"));
-		lf
-				.add(new File(
-						"/Users/marc/Desktop/android_ota/ota148830/system/framework/com.google.android.gtalkservice.odex"));
-		lf
-				.add(new File(
-						"/Users/marc/Desktop/android_ota/ota148830/system/app/Talk.odex"));
+		lf.add(new File("/Users/marc/Desktop/android_ota/ota148830/system/framework/core.odex"));
+		lf.add(new File("/Users/marc/Desktop/android_ota/ota148830/system/framework/ext.odex"));
+		lf.add(new File("/Users/marc/Desktop/android_ota/ota148830/system/framework/framework.odex"));
+		lf.add(new File("/Users/marc/Desktop/android_ota/ota148830/system/framework/android.policy.odex"));
+		lf.add(new File("/Users/marc/Desktop/android_ota/ota148830/system/framework/services.odex"));
+		lf.add(new File("/Users/marc/Desktop/android_ota/ota148830/system/framework/com.google.android.gtalkservice.odex"));
+		lf.add(new File("/Users/marc/Desktop/android_ota/ota148830/system/app/Talk.odex"));
+		
 		ClassCollection cc = new ClassCollection(lf);
 
 		System.out.println(cc.getVTableEntryForClass("Ljava/lang/Object;", 3));
 		System.out.println(cc.getVTableEntryForClass("Ljava/lang/Object;", 4));
 
-		System.out.println(cc.getVTableEntryForClass(
-				"Ljava/lang/StringBuilder;", 59));
-		System.out.println(cc.getVTableEntryForClass(
-				"Ljava/lang/StringBuilder;", 51));
-		System.out.println(cc.getVTableEntryForClass(
-				"Ljava/lang/StringBuilder;", 7));
+		System.out.println(cc.getVTableEntryForClass("Ljava/lang/StringBuilder;", 59));
+		System.out.println(cc.getVTableEntryForClass("Ljava/lang/StringBuilder;", 51));
+		System.out.println(cc.getVTableEntryForClass("Ljava/lang/StringBuilder;", 7));
 
 		System.out.println(cc.getVTableEntryForClass("Ljava/lang/Class;", 46));
 		System.out.println(cc.getVTableEntryForClass("LSQLite/Blob;", 15));
 
+		System.out.println(cc.getVTableEntryForClass("Lcom/google/common/Config;", 1));
 		System.out.println(cc.getVTableEntryForClass(
-				"Lcom/google/common/Config;", 1));
-		System.out
-				.println(cc
-						.getVTableEntryForClass(
-								"Lcom/google/android/googleapps/GoogleLoginCredentialsResult$1;",
-								11));
+				"Lcom/google/android/googleapps/GoogleLoginCredentialsResult$1;", 11));
 		System.out.println(cc.getVTableEntryForClass(
-				"Lcom/google/android/googleapps/GoogleLoginCredentialsResult;",
-				14));
+				"Lcom/google/android/googleapps/GoogleLoginCredentialsResult;", 14));
 		System.out.println(cc.getVTableEntryForClass(
-
-		"Lcom/android/htmlviewer/HTMLViewerActivity$WebChrome;", 122));
+				"Lcom/android/htmlviewer/HTMLViewerActivity$WebChrome;", 122));
 	}
 
 	private static Logger jlog = Logger.getLogger(OTAAccess.class.getName());

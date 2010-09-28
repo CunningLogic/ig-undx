@@ -1,5 +1,7 @@
 /* 
  * Developed by Marc Schoenefeld <marc.schoenefeld@gmx.org> 
+ * Updates by Corey Benninger, Max Sobell, Zach Lanier of Intrepidus Group
+ * {corey.benninger,max.sobell,zach.lanier}@intrepidusgroup.com  
  * 
  * Copyright (C) 2009 Marc Schoenefeld <http://www.illegalaccess.org> 
  * 
@@ -63,7 +65,7 @@ import org.illegalaccess.undx.types.LocalVar;
 import org.illegalaccess.undx.types.LocalVarContext;
 import org.illegalaccess.undx.types.LocalVar.VarType;
 
-import com.sun.tools.javac.util.Log;
+//import com.sun.tools.javac.util.Log;
 
 import sun.util.logging.resources.logging;
 
@@ -279,7 +281,7 @@ public class ClassHandler {
 			}
 
 		}
-
+/*
 		String tag = "undx_shameless_plug";
 		int myaccessflag = 2;
 		FieldGen fgshamelessplug = new FieldGen(myaccessflag,
@@ -295,7 +297,7 @@ public class ClassHandler {
 		// tag = "generated_on_" + (1900+d.getYear()) + "_" + (1+d.getMonth()) +
 		// "_"
 		// + d.getDate() + "_" + d.getHours() + "_" + d.getMinutes();
-		tag = "generated_on_" + (/* 1900 + */year) + "_" + (1 + month) + "_"
+		tag = "generated_on_" + ( 1900 + year) + "_" + (1 + month) + "_"
 				+ date + "_" + hours + "_" + mins;
 		fgshamelessplug = new FieldGen(myaccessflag, Type.getType("Z"), tag, pg);
 		f = fgshamelessplug.getField();
@@ -305,7 +307,7 @@ public class ClassHandler {
 		fgshamelessplug = new FieldGen(myaccessflag, Type.getType("Z"), tag, pg);
 		f = fgshamelessplug.getField();
 		cg.addField(f);
-
+*/
 		String themethods = getFromRE(theklass, re_methods);
 
 		// br = new BufferedReader(new StringReader(themethods));
@@ -1452,32 +1454,29 @@ public class ClassHandler {
 
 		else if (opname.equals("move-result-object")) {
 			handle_move_result_object(ops, il, cpg, locals);
-
 		}
 
 		else if (opname.equals("move-result")) {
 			handle_move_result(ops, il, cpg, locals, bl1, dcl);
-
 		}
 
 		else if (opname.equals("move-result-wide")) {
 			handle_move_result_wide(ops, il, cpg, locals, bl1, dcl);
-
 		}
 
 		else if (opname.equals("move-exception")) {
 			handle_move_exception(ops, il, cpg, locals);
-
 		}
 
 		else if (opname.equals("throw")) {
 			handle_throw_exception(ops, il, cpg, locals);
-
 		}
 
 		else if (opname.equals("new-array")) {
 			handle_new_array(ops, il, cpg, locals);
-		} else if (opname.equals("new-instance")) {
+		}
+		
+		else if (opname.equals("new-instance")) {
 			handle_new_instance(ops, il, cpg, locals);
 		}
 
@@ -1487,7 +1486,6 @@ public class ClassHandler {
 			int themonitor = locals.didx2jvmidxstr(regfrom);
 			il.append(new ALOAD(themonitor));
 			il.append(new MONITORENTER());
-
 		}
 
 		else if (opname.equals("monitor-exit")) {
@@ -1496,7 +1494,6 @@ public class ClassHandler {
 			int themonitor = locals.didx2jvmidxstr(regfrom);
 			il.append(new ALOAD(themonitor));
 			il.append(new MONITOREXIT());
-
 		}
 
 		else if (opname.equals("if-eqz")) {
@@ -1577,17 +1574,17 @@ public class ClassHandler {
 						break;
 					}
 
-				} else
-
-				if (i instanceof ASTORE) {
+				}
+				
+				else if (i instanceof ASTORE) {
 					ASTORE as = (ASTORE) i;
 					if (as.getIndex() == reg) {
 						type = "object";
 						break;
 					}
-				} else
-
-				if (i instanceof ALOAD) {
+				}
+				
+				else if (i instanceof ALOAD) {
 					ALOAD as = (ALOAD) i;
 					if (as.getIndex() == reg) {
 						type = "object";
@@ -1603,7 +1600,9 @@ public class ClassHandler {
 				il.append(new ALOAD(reg));
 				il.append(new IFNONNULL(ih));
 
-			} else {
+			} 
+			
+			else {
 				System.out.printf("if %s == 0 goto %s; \n", regfrom, toaddr);
 				il.append(new ILOAD(reg));
 				// il.append(new SIPUSH((short) 0));
@@ -2137,23 +2136,32 @@ public class ClassHandler {
 			il.append(new ILOAD(thereg));
 			il.append(new PUTSTATIC(thefield));
 			System.out.printf("boolean %s = (boolean) %s;\n", field, regfrom);
+			
 		} else if (opname.equals("sput-char")) {
+			// puts char value in "vx" into static field
 			String regfrom = ops[1].replaceAll(",", "");
 			String field = ops[2].replaceAll(",", "");
 			System.out.printf("%s = %s;\n", field, regfrom);
 			int thereg = locals.didx2jvmidxstr(regfrom);
 			int thefield = geteasyFieldRef(cpg, field);
+			// iload loads thereg onto the stack
+			// "push"
 			il.append(new ILOAD(thereg));
+			// putstatic stores the static value on top of the statck to thefield
 			il.append(new PUTSTATIC(thefield));
 			System.out.printf("char %s = (char) %s;\n", field, regfrom);
 
 		} else if (opname.equals("sget-boolean")) {
+			// reads the boolean static field into "vx" (dalvik)
 			String regfrom = ops[1].replaceAll(",", "");
 			String field = ops[2].replaceAll(",", "");
 			System.out.printf("boolean %s = (boolean)%s;\n", regfrom, field);
 			int thereg = locals.didx2jvmidxstr(regfrom);
 			int thefield = geteasyFieldRef(cpg, field);
+			// getstatic loads the static value in thefield onto the stack
 			il.append(new GETSTATIC(thefield));
+			// istore loads the top of the stack to thereg
+			// "pop"
 			il.append(new ISTORE(thereg));
 
 		} else if (opname.equals("sget-char")) {
@@ -2164,7 +2172,7 @@ public class ClassHandler {
 			int thefield = geteasyFieldRef(cpg, field);
 			il.append(new GETSTATIC(thefield));
 			il.append(new ISTORE(thereg));
-
+							
 		} else if (opname.equals("sput-object")) {
 			String regfrom = ops[1].replaceAll(",", "");
 			String field = ops[2].replaceAll(",", "");
@@ -2175,9 +2183,7 @@ public class ClassHandler {
 			il.append(new PUTSTATIC(thefield));
 			System.out.printf("object %s = (object) %s;\n", field, regfrom);
 
-		}
-
-		else if (opname.equals("filled-new-array")) {
+		} else if (opname.equals("filled-new-array")) {
 			String type = ops[2].replaceAll(",", "");
 			String z = getstaticparams(regs);
 			il.append(new SIPUSH((short) regs.length));
@@ -4292,10 +4298,185 @@ public class ClassHandler {
 			// jlog.info(il);
 
 			System.out.printf("return %s;", regoper);
-		} else {
-			// jlog.info("unknown");
-			Utils.stopAndDump("Unknown Opcode:*" + opname + "*");
+		}
+			/*
+			 * STILL MISSING:
+			 * from BadDalvikOpcodes
+				move-wide -- has no description
+				move/16 -- has no description
+				move-object/16 -- has no description
+				invoke-virtual-quick/range
+				invoke-super-quick/range
+				goto/32 - no desc. but i'm guessing this is "Unconditional jump by 32 bit offset"?
+				filled-new-array-range
+				const-string-jumbo
+				
+			 * DONE (or kludged):
+			 * iput-wide-quick -- used the same routine as iput-wide
+			 * iput-quick -- used iput for this
+			 * iget-wide-quick
+			 * iget-quick
+			 */
+		/** added by IG **/
+		else if(opname.equals("sub-int/lit16")) {
+			// sub-int/lit16 - Calculates vy - lit16 and stores the result into vx.
+			String regto = ops[1].replaceAll(",", "");
+			String regfrom = ops[2].replaceAll(",", "");
+			String type = ops[3].replaceAll(",", "");
+			String val = ops[4].replaceAll(",", "");
+			// Load int from local variable
+			il.append(new ILOAD(locals.didx2jvmidxstr(regfrom)));
+			// Push item from runtime constant pool
+			// TODO: do this using getShortestIntegerPush?
+			getShortestIntegerPush(cpg, Integer.parseInt(val), il);
+			// il.append(new LDC(cpg.addInteger(Integer.parseInt(val))));
+			/* 
+			 * pops 2 values from the stack, subtracts the
+			 * first from the second and stores the result
+			 * on the stack
+			 */
+			il.append(new ISUB());
+			// Store int into local variable
+			il.append(new ISTORE(locals.didx2jvmidxstr(regto)));
+			
+			System.out.printf("int %s =  (int )%s - (%s)%s;\n", regto, regfrom,
+					type, val);
+		}
+		/** added by IG **/
+		else if(opname.equals("sub-int/lit8")) {			
+			// sub-int/lit8 - Calculates vy - lit8 and stores the result into vx. 
+			String regto = ops[1].replaceAll(",", "");
+			String regfrom = ops[2].replaceAll(",", "");
+			String type = ops[3].replaceAll(",", "");
+			String val = ops[4].replaceAll(",", "");
+			// Load int from local variable
+			il.append(new ILOAD(locals.didx2jvmidxstr(regfrom)));
+			// Push item from runtime constant pool
+			getShortestIntegerPush(cpg, Integer.parseInt(val), il);
+			// il.append(new LDC(cpg.addInteger(Integer.parseInt(val))));
+			/* 
+			 * pops 2 values from the stack, subtracts the
+			 * first from the second and stores the result
+			 * on the stack
+			 */
+			il.append(new ISUB());
+			// Store int into local variable
+			il.append(new ISTORE(locals.didx2jvmidxstr(regto)));
+			
+			System.out.printf("int %s =  (int )%s - (%s)%s;\n", regto, regfrom,
+					type, val);
+		}
+		
+		//move-wide 
+		
+		
+		/** added by IG **/
+		else if (opname.equals("sget-byte")) {
+			String regfrom = ops[1].replaceAll(",", "");
+			String field = ops[2].replaceAll(",", "");
+			System.out.printf("byte %s = (byte)%s;\n", regfrom, field);
+			int thereg = locals.didx2jvmidxstr(regfrom);
+			int thefield = geteasyFieldRef(cpg, field);
+			il.append(new GETSTATIC(thefield));
+			il.append(new ISTORE(thereg));
 
+		} 
+		/** added by IG **/
+		else if (opname.equals("sget-short")) {
+			String regfrom = ops[1].replaceAll(",", "");
+			String field = ops[2].replaceAll(",", "");
+			System.out.printf("short %s = (short)%s;\n", regfrom, field);
+			int thereg = locals.didx2jvmidxstr(regfrom);
+			int thefield = geteasyFieldRef(cpg, field);
+			il.append(new GETSTATIC(thefield));
+			il.append(new ISTORE(thereg));
+			
+		}
+		/** added by IG **/
+		else if (opname.equals("sput-short")) {
+			String regfrom = ops[1].replaceAll(",", "");
+			String field = ops[2].replaceAll(",", "");
+			System.out.printf("%s = %s;\n", field, regfrom);
+			int thereg = locals.didx2jvmidxstr(regfrom);
+			int thefield = geteasyFieldRef(cpg, field);
+			il.append(new ILOAD(thereg));
+			il.append(new PUTSTATIC(thefield));
+			System.out.printf("short %s = (short) %s;\n", field, regfrom);
+			
+		}
+		/** added by IG **/
+		else if (opname.equals("sput-byte")) {
+			String regfrom = ops[1].replaceAll(",", "");
+			String field = ops[2].replaceAll(",", "");
+			System.out.printf("%s = %s;\n", field, regfrom);
+			int thereg = locals.didx2jvmidxstr(regfrom);
+			int thefield = geteasyFieldRef(cpg, field);
+			il.append(new ILOAD(thereg));
+			il.append(new PUTSTATIC(thefield));
+			System.out.printf("byte %s = (byte) %s;\n", field, regfrom);
+			
+		}
+		/** added by IG **/
+		else if (opname.equals("ushr-long/2addr")) {
+			/* 
+			 * ushr-long/2addr vx, vy
+			 * Unsigned shifts right the value in vx,vx+1 by the positions
+			 * specified by vy and stores the result in vx,vx+1.
+			 */
+			String regto = ops[1].replaceAll(",", "");
+			String regfrom = ops[2].replaceAll(",", "");
+			System.out.printf("long %s =  (long)%s >> (long)%s;\n", regto,
+					regto, regfrom);
+			// Pushes long local variable onto the stack
+			il.append(new LLOAD(locals.didx2jvmidxstr(regto)));
+			il.append(new LLOAD(locals.didx2jvmidxstr(regfrom)));
+			/*
+			 *  Logical shift right long:
+			 *  v2 = int (from stack)
+			 *  v1 = long (from stack)
+			 *  Pops v2 (4 byte) and then v1 (8 byte) from the
+			 *  operand stack, shits v1 right by the low 6 bits
+			 *  of v2 and pushes the result onto the stack.
+			 *  
+			 */
+			// changed LSHR -> LUSHR
+			il.append(new LUSHR());
+			// store long variable on the top of the stack into regto
+			il.append(new LSTORE(locals.didx2jvmidxstr(regto)));
+			
+		}
+		
+		/* TODO: check if the following operations work.
+		 * All I did was take the quick operation and handle
+		 * it the same way the "slow" operation is handled.
+		 */
+
+		/** added by IG **/
+		else if (opname.equals("iput-wide-quick")) {
+			handle_iput_wide(ops, il, cpg, locals);
+		}
+		
+		/** added by IG **/
+		else if (opname.equals("iput-quick")) {
+			handle_iput(ops, il, cpg, locals);
+		}
+		
+		/** added by IG **/
+		else if (opname.equals("iget-wide-quick")) {
+			handle_iget_wide(ops, il, cpg, locals);
+		}
+		
+		/** added by IG **/
+		else if (opname.equals("iget-quick")) {
+			handle_iget(ops, il, cpg, locals);
+		}
+		
+		else {
+			// jlog.info("unknown");
+			// added by max 6/23 to print a stack trace but do not exit
+			
+			// Utils.stopAndDump("Unknown Opcode:*" + opname + "*");
+			Utils.continueAndDump("Unknown Opcode:*" + opname + "*");
 		}
 
 		String y_il = il.toString(true);

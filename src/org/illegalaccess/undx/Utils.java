@@ -1,5 +1,7 @@
 /* 
  * Developed by Marc Schoenefeld <marc.schoenefeld@gmx.org> 
+ * Updates by Corey Benninger, Max Sobell, Zach Lanier of Intrepidus Group
+ * {corey.benninger,max.sobell,zach.lanier}@intrepidusgroup.com  
  * 
  * Copyright (C) 2009 Marc Schoenefeld <http://www.illegalaccess.org> 
  * 
@@ -111,8 +113,8 @@ public class Utils {
 
 	public static void continueAndDump(String reason) {
 		new Throwable().printStackTrace();
-		System.err.println("exited because of:" + reason);
-		// System.exit(-1);
+		System.err.println("error because of:" + reason);
+		jlog.log(Level.SEVERE, "Error: " + reason);
 	}
 
 	public static String toJavaName(String vmname) {
