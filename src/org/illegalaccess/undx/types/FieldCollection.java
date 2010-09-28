@@ -1,0 +1,121 @@
+/* 
+ * Developed by Marc Schoenefeld <marc.schoenefeld@gmx.org> 
+ * 
+ * Copyright (C) 2009 Marc Schoenefeld <http://www.illegalaccess.org> 
+ * 
+ * This file is a part of undx. 
+ * 
+ * This project is free software; you can redistribute it and/or modify 
+ * it under the terms of the GNU General Public License as published by 
+ * the Free Software Foundation; either version 2 of the License, or 
+ * (at your option) any later version. 
+ * 
+ * This project is distributed in the hope that it will be useful, 
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of 
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the 
+ * GNU General Public License for more details. 
+ * 
+ * You should have received a copy of the GNU General Public License 
+ * along with this program; if not, write to the Free Software 
+ * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA 
+ */
+
+package org.illegalaccess.undx.types;
+
+import java.util.ArrayList;
+import java.util.logging.Logger;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+
+import org.illegalaccess.undx.Utils;
+
+public class FieldCollection extends ArrayList<DexFieldDetails> {
+	private static final long serialVersionUID = 1L;
+	private static Logger jlog = Logger
+			.getLogger("org.illegalaccess.undx.FieldCollection");
+
+	FieldCollection() {
+
+	}
+
+	public DexFieldDetails getForOffset(int off) {
+		for (int i = 0; i < size(); i++) {
+			if (get(i).offset == off) {
+				return get(i);
+			}
+		}
+		return null;
+	}
+
+	static Pattern p; 
+	static {
+		String searchit = "\\#(\\d+)\\s+\\:\\s\\(in\\s(.+?)\\)"; // .+?'(.+?)'.+?'(.+?)'.+?access\\s+?\\:\\s(.+?)\\s\\((.*?)\\)";
+		searchit = "\\#(\\d+)\\s+\\:\\s\\(in\\s(.+?)\\).+?'(.+?)'.+?'(.+?)'.+?access\\s+?\\:\\s(.+?)\\s\\((.*?)\\)";
+		p = Pattern.compile(searchit, Pattern.CANON_EQ | Pattern.DOTALL
+				| Pattern.MULTILINE);
+
+	}
+
+	FieldCollection(String parm) {
+
+		jlog.fine(parm.substring(0, Math.min(parm.length(), 250)));
+		Matcher m = p.matcher(parm);
+		while (m.find()) {
+
+			int num = Integer.parseInt(m.group(1));
+			jlog.fine("mnum=" + num);
+			String classname = m.group(2);
+			jlog.fine("mclassname=" + classname);
+			String name = m.group(3);
+			jlog.fine("name=" + name);
+			String sig = m.group(4);
+			jlog.fine("sig=" + sig);
+			String access = m.group(5);
+			jlog.fine("access=" + access);
+			String accesstext = m.group(6);
+			jlog.fine("accesstxt=" + accesstext);
+
+			DexFieldDetails dmd = new DexFieldDetails(num, -1, classname, name,
+					sig, access, accesstext);
+			add(new Integer(num), dmd);
+			if (classname.equals("Ljava/lang/Class;")) {
+				jlog.info(dmd.toString());
+			}
+
+		}
+		int off = 8;
+		for (int i = 0; i < size(); i++) {
+			get(i).offset = off;
+			int inc = 4;
+			if (get(i).sig.startsWith("L")) {
+				inc = 4;
+			}
+			if (get(i).sig.startsWith("J")) {
+				inc = 8;
+			}
+			if (get(i).sig.startsWith("D")) {
+				inc = 8;
+			}
+			off += inc;
+		}
+
+		jlog.fine("found:" + size() + " methods!");
+
+	}
+
+	public String toString() {
+
+		String t = "[";
+
+		for (int i = 0; i < size(); i++) {
+			t = t
+					+ Utils.sprintf("[%s]+[%s]+[%s]", new Object[] { i,
+							get(i).name, get(i).sig });
+		}
+
+		t = t + "]";
+
+		return t;
+	}
+
+}
