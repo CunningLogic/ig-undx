@@ -1,3 +1,8 @@
+2010-10-18  rgov  <rgovostes@gmail.com>
+
+    * Added pom.xml for compilation using Maven.
+
+
 2010-08-10  mxs  <max.sobell@intrepidusgroup.com>
 
     * Added version support -- findASDK() now searches for version instead of defaulting to platforms/android-8/
